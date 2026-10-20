@@ -42,7 +42,7 @@ For each finding, provide:
 
 A good finding references specific code, not vague concerns ("this could be better"). It distinguishes between "this is broken" and "I would have done this differently". It considers the stated intent. A finding that ignores the context of what's being built is a bad finding.
 
-Do not restate what the code does without identifying a problem. Do not praise the code. If you find nothing wrong, say "no findings" and stop. An empty review is a valid outcome.
+Do not restate what the code does without identifying a problem. Do not praise the code. If you find nothing wrong, reply with exactly `Nothing found` and nothing else, then stop. An empty review is a valid outcome.
 
 ## Output
 

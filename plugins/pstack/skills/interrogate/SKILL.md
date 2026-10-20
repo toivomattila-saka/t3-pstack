@@ -34,13 +34,15 @@ Launch all reviewers in a single response with `delegate_task`, one per entry on
 
 Each reviewer gets `role: "review"`, a brief that says to inspect only and change no file, and `target` set from its configured entry, or from its table default when there is no configured line. Omit `target` for an `auto` or `inherit-parent` entry, so that reviewer runs on the parent model.
 
+Always-on lenses may be added from `sweep` lens mode without asking. They are read-only and free. Their findings go through Step 4 like any reviewer's.
+
 If `delegate_task` rejects a configured entry, run that reviewer on another target of the same family from `orchestrator_capabilities` and say so. A model's family is the first segment of its ID's last `/` part, such as `claude`, `gpt`, or `grok`, whatever provider instance serves it. With no family match, use Reviewer A's default. If it rejects a table default, spawn on the closest target of the same family from `orchestrator_capabilities` (prefer the same reasoning tier), and open a separate PR to update the default table. Do not block the review on the slug issue. Never treat an alias entry as a rejected slug or apply either fallback to it.
 
 Read `references/reviewer-prompt.md` and fill in the same template for every reviewer with the stated intent, the diff or file contents, the rubric from `references/rubric.md`, and the code-quality lens from `references/code-quality-review.md`. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **poteto-mode** skill.
 
 ## Step 4, Synthesize
 
-As results come back, build a unified picture. Parse every reviewer's findings. Merge findings that describe the same issue differently, and note which models raised each one. Findings two or more models raised independently are the highest signal. Read a lone model's finding, but weight it accordingly. Note disagreements. If one model flags something and another explicitly says the opposite, that is context for the verdict.
+As results come back, build a unified picture. Parse every reviewer's findings. A reviewer that returns the exact sentinel `Nothing found` is dropped from the findings list and not relayed. Merge findings that describe the same issue differently, and note which models raised each one. Findings two or more models raised independently are the highest signal. Read a lone model's finding, but weight it accordingly. Note disagreements. If one model flags something and another explicitly says the opposite, that is context for the verdict.
 
 ## Step 5, Lead Judgment
 

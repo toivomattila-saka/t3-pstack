@@ -10,3 +10,4 @@ disable-model-invocation: true
 
 **Pattern:**
 - **Size phases and cap scope.** Limit files per phase, set turn budgets, account for mechanism costs.
+- **Compress on return.** Read-only sweep workers return at most 150 words with file:line evidence, and `Nothing found` is dropped, never relayed (see `sweep`'s return contract and principle-spend-free-compute).

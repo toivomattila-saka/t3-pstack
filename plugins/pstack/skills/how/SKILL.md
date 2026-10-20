@@ -14,10 +14,10 @@ Every spawn is a `delegate_task` child with `role: "research"` and a brief that 
 
 If the scope is ambiguous, state your interpretation and explore. The user can redirect.
 
-- **Simple** (a single module, a small utility, a narrow question such as "how does function X work"): no explorers. Spawn one explainer that explores and explains in one pass, built from `references/explainer-prompt.md` without the explorer-findings section. Go to step 4.
+- **Simple** (a single module, a small utility, a narrow question such as "how does function X work"): no explorers, unless a fact you would otherwise assume needs a scout (see `sweep` scout mode). Spawn one explainer that explores and explains in one pass, built from `references/explainer-prompt.md` without the explorer-findings section. Go to step 4.
 - **Complex** (a subsystem spanning multiple files or services, a cross-cutting feature, a full architectural overview): go to step 2.
 
-When in doubt, take the simple path.
+When in doubt, take the simple path only for a truly trivial task. For anything non-trivial, ask scouts (`sweep` scout mode) before you assume: asking is free, and explorers are cheap.
 
 ## 2. Explore (complex only)
 
