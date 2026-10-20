@@ -972,6 +972,102 @@
       "replacement": "hourly schedule_task",
       "rationale": "the plan arms a schedule_task; the checker's marker moves with the template",
       "files": "^skills/poteto-mode/scripts/check-plan\\.(?:mjs|test\\.ts)$"
+    },
+    {
+      "pattern": "no explorers. Spawn one explainer",
+      "replacement": "no explorers, unless a fact you would otherwise assume needs a scout (see `sweep` scout mode). Spawn one explainer",
+      "rationale": "free read-only scouts before assuming (sweep scout mode; read-only Haiku checks are free)",
+      "files": "^skills/how/SKILL\\.md$"
+    },
+    {
+      "pattern": "When in doubt, take the simple path.",
+      "replacement": "When in doubt, take the simple path only for a truly trivial task. For anything non-trivial, ask scouts (`sweep` scout mode) before you assume: asking is free, and explorers are cheap.",
+      "rationale": "free read-only scouts before assuming (sweep scout mode; read-only Haiku checks are free)",
+      "files": "^skills/how/SKILL\\.md$"
+    },
+    {
+      "pattern": "State your interpretation briefly so the user can redirect if you're off, then proceed.",
+      "replacement": "If a checkable fact decides the target, ask a scout (`sweep` scout mode) rather than guessing. State your interpretation briefly so the user can redirect if you're off, then proceed.",
+      "rationale": "free read-only scouts before assuming (sweep scout mode; read-only Haiku checks are free)",
+      "files": "^skills/why/SKILL\\.md$"
+    },
+    {
+      "pattern": "If `delegate_task` rejects a configured entry, run that reviewer on another target of the same family from `orchestrator_capabilities` and say so.",
+      "replacement": "Always-on lenses may be added from `sweep` lens mode without asking. They are read-only and free. Their findings go through Step 4 like any reviewer's.\n\nIf `delegate_task` rejects a configured entry, run that reviewer on another target of the same family from `orchestrator_capabilities` and say so.",
+      "rationale": "always-on read-only lenses (sweep lens mode) are free, so they need no ask",
+      "files": "^skills/interrogate/SKILL\\.md$"
+    },
+    {
+      "pattern": "Merge findings that describe the same issue differently, and note which models raised each one.",
+      "replacement": "A reviewer that returns the exact sentinel `Nothing found` is dropped from the findings list and not relayed. Merge findings that describe the same issue differently, and note which models raised each one.",
+      "rationale": "a Nothing found reviewer is dropped (sweep's return contract); the synthesis rule of interrogate",
+      "files": "^skills/interrogate/SKILL\\.md$"
+    },
+    {
+      "pattern": "If you find nothing wrong, say \"no findings\" and stop.",
+      "replacement": "If you find nothing wrong, reply with exactly `Nothing found` and nothing else, then stop.",
+      "rationale": "a Nothing found reviewer is dropped (sweep's return contract); the synthesis rule of interrogate",
+      "files": "^skills/interrogate/references/reviewer-prompt\\.md$"
+    },
+    {
+      "pattern": "Prefer fewer, broader workers.",
+      "replacement": "Prefer fewer, broader write workers. Read-only scouts and lenses are exempt (see `sweep`).",
+      "rationale": "read-only scouts and lenses are free and exempt from the writer cap (sweep)",
+      "files": "^skills/poteto-mode/playbooks/orchestrate\\.md$"
+    },
+    {
+      "pattern": "Run a unit's verifier on a different model family from its worker.",
+      "replacement": "Run a unit's verifier as a fresh agent that did not write the unit, on a different model family from its worker when one is available.",
+      "rationale": "an independent reviewer is a fresh agent; cross-family is preferred when available (poteto-mode Subagents)",
+      "files": "^skills/poteto-mode/playbooks/orchestrate\\.md$"
+    },
+    {
+      "pattern": "A dedicated verifier agent (on a different model family than the worker) is for units",
+      "replacement": "A dedicated verifier agent (a fresh agent, on a different model family than the worker when one is available) is for units",
+      "rationale": "an independent reviewer is a fresh agent; cross-family is preferred when available (poteto-mode Subagents)",
+      "files": "^skills/poteto-mode/playbooks/orchestrate\\.md$"
+    },
+    {
+      "pattern": "A verifier agent whose entire product would be rerunning one command is ceremony, not verification.",
+      "replacement": "A verifier agent whose entire product would be rerunning one command is ceremony, not verification. A free read-only verifier (see `sweep`) is not ceremony.",
+      "rationale": "read-only verifiers are free (sweep), so they are not ceremony",
+      "files": "^skills/poteto-mode/playbooks/orchestrate\\.md$"
+    },
+    {
+      "pattern": "Don't fan out delegates to hand-apply what a script can do.",
+      "replacement": "Don't fan out delegates to hand-apply what a script can do. This is for writes and for questions with a single mechanical answer; read-only fan-out is free and is allowed for recall (see `sweep`).",
+      "rationale": "read-only fan-out is free (sweep); the lever rule covers writes and mechanical answers",
+      "files": "^skills/principle-build-the-lever/SKILL\\.md$"
+    },
+    {
+      "pattern": "Limit files per phase, set turn budgets, account for mechanism costs.",
+      "replacement": "Limit files per phase, set turn budgets, account for mechanism costs.\n- **Compress on return.** Read-only sweep workers return at most 150 words with file:line evidence, and `Nothing found` is dropped, never relayed (see `sweep`'s return contract and principle-spend-free-compute).",
+      "rationale": "sweep's return contract compresses read-only worker output",
+      "files": "^skills/principle-guard-the-context-window/SKILL\\.md$"
+    },
+    {
+      "pattern": "Do X, explain why.",
+      "replacement": "Do X, explain why.\n- Check before you ask. A checkable question is answered by a free scout (see `sweep`) before it is assumed. Ask the user only what only the user can answer. The proceed default is unchanged for questions no check can answer.",
+      "rationale": "a checkable question gets a free scout before it is assumed (sweep)",
+      "files": "^skills/principle-never-block-on-the-human/SKILL\\.md$"
+    },
+    {
+      "pattern": "| Have different models review a diff and try to break it | [`/interrogate`](../interrogate/SKILL.md) |",
+      "replacement": "| Have different models review a diff and try to break it | [`/interrogate`](../interrogate/SKILL.md) |\n| Fan out read-only Haiku workers for scouting, lenses, or a panel | [`/sweep`](../sweep/SKILL.md) |",
+      "rationale": "sweep is a port skill; the help table lists it",
+      "files": "^skills/poteto-help/SKILL\\.md$"
+    },
+    {
+      "pattern": "on a different model family per the **arena** skill's Phase C.",
+      "replacement": "on a different model family when one is available, per the **arena** skill's Phase C.",
+      "rationale": "an independent judge is a fresh agent; cross-family is preferred when available (poteto-mode Subagents)",
+      "files": "^skills/poteto-mode/playbooks/eval\\.md$"
+    },
+    {
+      "pattern": "Before handing back, spawn a subagent on a different model family from the one that did the work.",
+      "replacement": "Before handing back, spawn a fresh subagent, on a different model family from the one that did the work when one is available.",
+      "rationale": "an independent reviewer is a fresh agent; cross-family is preferred when available (poteto-mode Subagents)",
+      "files": "^skills/show-me-your-work/SKILL\\.md$"
     }
   ],
   "denylist": [
