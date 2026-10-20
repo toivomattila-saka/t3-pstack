@@ -4,6 +4,7 @@
 // themselves live in the text, as substitutions, so nothing here stamps a
 // runtime preamble.
 
+import { isPanelRole, panelFamilies, parseEntry, sameFamilyNote } from "../plugins/pstack/skills/setup-pstack/scripts/t3-sheet.mjs";
 import { code } from "./plugin.mjs";
 
 // Split a Markdown file into its YAML frontmatter and the text after it.
@@ -84,13 +85,23 @@ const SHEET =
   "maps onto `delegate_task`'s `target`, with the provider instance as `providerInstanceId`, the model as `model`, " +
   "and the pairs as `options`. It splits at its first `/`, so a model ID with its own `/`, such as OpenCode's " +
   "`<provider>/<model>`, is written whole after it. Option IDs differ per provider, so take them from " +
-  "`orchestrator_capabilities`. `inherit-parent` or `auto` omits `target`.";
+  "`orchestrator_capabilities`. A `count=<n>` pair (1 to 8) runs n independent workers on the entry, and a " +
+  "panel's workers are its entries' counts summed. `inherit-parent` or `auto` omits `target`.";
 
 export const entries = (models, role) => [models.tiers[role.tier]].flat();
 
-const roleLine = (models, r) =>
-  `- ${r.role}: ${entries(models, r).map(code).join(", ")}` +
-  (r.alias ? ` (a \`${r.alias}\` line counts as this role)` : "");
+// An entry as the sheet writes it: with the role's `count` when the role fans out.
+const withCount = (text, role) => (role.count > 1 ? `${text} count=${role.count}` : text);
+const workerEntries = (models, role) => entries(models, role).map((text) => withCount(text, role));
+
+const roleLine = (models, r) => {
+  const note = isPanelRole(r) && sameFamilyNote(panelFamilies(entries(models, r).map((text) => parseEntry(text))));
+  return (
+    `- ${r.role}: ${workerEntries(models, r).map(code).join(", ")}` +
+    (r.alias ? ` (a \`${r.alias}\` line counts as this role)` : "") +
+    (note ? ` Note: ${note}.` : "")
+  );
+};
 
 export function modelsSection(models, roles) {
   return `Role defaults on T3, stamped from \`plugins/pstack/models.json\`. ${SHEET}\n\n${roles.map((r) => roleLine(models, r)).join("\n")}`;
@@ -98,7 +109,7 @@ export function modelsSection(models, roles) {
 
 // The sheet setup-pstack writes when the user keeps every default.
 export function sheetBlock(models) {
-  const rows = models.roles.map((r) => `${r.role}: ${entries(models, r).join(", ")}`);
+  const rows = models.roles.map((r) => `${r.role}: ${workerEntries(models, r).join(", ")}`);
   return [
     "# pstack model configuration (T3). One line per role. Delete a line to fall back to the skill default.",
     "# `inherit-parent` or `auto` as a value: the role runs on the parent chat's model (`delegate_task` omits `target`). Alias entries in a panel list still count toward its fan-out.",

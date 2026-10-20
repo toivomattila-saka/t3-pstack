@@ -46,7 +46,11 @@
           "id": "claude-fable-5-1",
           "options": [{ "id": "effort", "type": "select", "options": [{ "id": "low" }, { "id": "medium" }, { "id": "high" }, { "id": "xhigh" }, { "id": "max" }] }]
         },
-        { "id": "claude-haiku-4-5", "options": [{ "id": "thinking", "type": "boolean" }] }
+        { "id": "claude-haiku-4-5", "options": [{ "id": "thinking", "type": "boolean" }] },
+        {
+          "id": "claude-haiku-5-5",
+          "options": [{ "id": "effort", "type": "select", "options": [{ "id": "low" }, { "id": "medium" }, { "id": "high" }, { "id": "xhigh" }, { "id": "max" }] }]
+        }
       ],
       "canRunChildTask": true,
       "canRunCrossProviderChildTask": true,

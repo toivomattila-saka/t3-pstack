@@ -19,16 +19,17 @@ The default role-to-target mapping is the sheet shape in step 5 below. If the sh
 
 ### 3. Budget, map, and confirm
 
-**(a) Ask for a budget.** Ask a structured multiple-choice question (`AskUserQuestion` on Claude Code, numbered options in plain text elsewhere). Offer these four options with these exact labels, and name the current budget when the sheet records one. With no sheet, say that `large` matches the skill defaults.
+**(a) Ask for a budget.** Ask a structured multiple-choice question (`AskUserQuestion` on Claude Code, numbered options in plain text elsewhere). Offer these five options with these exact labels, and name the current budget when the sheet records one. With no sheet, say that `large` matches the skill defaults.
 
 - `unlimited - max reasoning`
 - `large - xhigh reasoning`
 - `medium - high reasoning`
 - `small - medium reasoning`
+- `free - Haiku 5.5 high on read-only roles`
 
-**(b) Apply it.** Build the working table from the defaults, and on a re-run keep any role you changed by provider, list, or alias (`inherit-parent`, `auto`). `unlimited`, `large`, `medium`, and `small` set the reasoning option of every entry, panel entries included, to `max`, `xhigh`, `high`, or `medium`. Use the option ID that provider lists. If the provider does not offer that value, use its highest value at or below the target, else mark the role as needing a choice. So Grok, whose reasoning tops out at `xhigh`, stays at `xhigh` under `unlimited`. `inherit-parent` and `auto` do not change.
+**(b) Apply it.** Build the working table from the defaults, and on a re-run keep any role you changed by provider, list, or alias (`inherit-parent`, `auto`). `unlimited`, `large`, `medium`, and `small` set the reasoning option of every entry, panel entries included, to `max`, `xhigh`, `high`, or `medium`. Use the option ID that provider lists. If the provider does not offer that value, use its highest value at or below the target, else mark the role as needing a choice. So Grok, whose reasoning tops out at `xhigh`, stays at `xhigh` under `unlimited`. `inherit-parent` and `auto` do not change. `free` sets the read-only roles (`how explorer`, `sweep scout`, `sweep lens`, `sweep panel`, and `sweep verifier`) to `claudeAgent/claude-haiku-5-5 effort=high`, with `sweep panel` keeping its `count=3`, and leaves the writers and the other roles at their defaults. If this machine cannot run Haiku 5.5, mark those roles as needing a choice.
 
-**(c) Show the roles and confirm.** Show every role with its entry, marking any target not in the detected set as needing a choice. Also list each line step 2 dropped. Ask whether to accept as-is or change specific roles, offering the detected targets plus `inherit-parent` and `auto` (both mean: this role runs on the parent chat's model) as the options. For panel roles (`arena runners`, `architect runners`, `interrogate reviewers`) the value is a list, and one subagent runs per entry, alias entries included, so the list length sets the count. A panel needs at least two model families among its targets. A model's family is the first segment of its ID's last `/` part, such as `claude`, `gpt`, or `grok`. `arena cross-judge pool` is also a list, but Arena selects one value from it whose model ran no candidate and whose family differs from the parent's when possible. `swarm workers` is the default target for every worker unless a race or comparison assigns another per arm.
+**(c) Show the roles and confirm.** Show every role with its entry, marking any target not in the detected set as needing a choice. Also list each line step 2 dropped. Ask whether to accept as-is or change specific roles, offering the detected targets plus `inherit-parent` and `auto` (both mean: this role runs on the parent chat's model) as the options. For panel roles (`arena runners`, `architect runners`, `interrogate reviewers`) the value is a list, and one subagent runs per entry, so the list length sets the count. A line may give an entry `count=<n>` (1 to 8) to run n workers on it, as `sweep panel` does with 3 by default. A panel needs at least two workers: the entries' counts summed, with `inherit-parent` counting as one. Distinct model families are not required. When every worker is one family, the checker prints a note, not an error, since same-family workers share blind spots and a second family is the upgrade. A model's family is the first segment of its ID's last `/` part, such as `claude`, `gpt`, or `grok`. `arena cross-judge pool` is also a list, but Arena selects one value from it whose model ran no candidate and whose family differs from the parent's when possible. `swarm workers` is the default target for every worker unless a race or comparison assigns another per arm.
 
 **(d) Ask about the session-start hook.** Ask whether t3-pstack's session-start hook should keep telling new chats when to enter `/poteto-mode`. Write `session hook: on` or `session hook: off`.
 
@@ -50,7 +51,7 @@ perf-issue: claudeAgent/claude-fable-5-1 effort=xhigh
 hillclimb: claudeAgent/claude-fable-5-1 effort=xhigh
 judgment and prose: claudeAgent/claude-opus-5-5 effort=xhigh
 hardest tasks: claudeAgent/claude-fable-5-1 effort=xhigh
-how explorer: claudeAgent/claude-opus-5-5 effort=xhigh
+how explorer: claudeAgent/claude-haiku-5-5 effort=high
 how explainer: claudeAgent/claude-opus-5-5 effort=xhigh
 why investigators: claudeAgent/claude-opus-5-5 effort=xhigh
 why synthesizer: claudeAgent/claude-opus-5-5 effort=xhigh
@@ -61,6 +62,11 @@ arena cross-judge pool: claudeAgent/claude-opus-5-5 effort=xhigh, codex/gpt-6.1-
 swarm workers: claudeAgent/claude-opus-5-5 effort=xhigh
 architect runners: claudeAgent/claude-opus-5-5 effort=xhigh, codex/gpt-6.1-sol reasoningEffort=xhigh, grok/grok-4.7 reasoningEffort=xhigh
 interrogate reviewers: claudeAgent/claude-opus-5-5 effort=xhigh, codex/gpt-6.1-sol reasoningEffort=xhigh, grok/grok-4.7 reasoningEffort=xhigh
+sweep scout: claudeAgent/claude-haiku-5-5 effort=high
+sweep lens: claudeAgent/claude-haiku-5-5 effort=high
+sweep panel: claudeAgent/claude-haiku-5-5 effort=high count=3
+sweep verifier: claudeAgent/claude-haiku-5-5 effort=high
+high-stakes check: claudeAgent/claude-opus-5-5 effort=high
 session hook: on
 ```
 

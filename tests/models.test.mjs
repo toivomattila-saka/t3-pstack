@@ -37,7 +37,7 @@ describe("parseModels", () => {
   };
   const role = (policy, label) => policy.roles.find((r) => r.role === label);
 
-  test.each(["default", "strongest", "panel"])("a missing %s tier throws naming it", (tier) => {
+  test.each(["default", "strongest", "panel", "free", "high-stakes"])("a missing %s tier throws naming it", (tier) => {
     expect(parse((p) => delete p.tiers[tier])).toThrow(`models.json: tiers has no "${tier}"`);
   });
 
@@ -53,14 +53,34 @@ describe("parseModels", () => {
     );
   });
 
-  test("a single-model tier holds one entry and the panel a list of two families", () => {
+  test("a single-model tier holds one entry and the panel a list", () => {
     expect(parse((p) => (p.tiers.default = [p.tiers.default]))).toThrow('models.json: tier "default" must be one entry, not a list');
-    expect(parse((p) => (p.tiers.panel = ["claudeAgent/claude-opus-5-5", "claudeAgent/claude-fable-5-1"]))).toThrow(
-      "models.json: the panel needs at least two model families",
-    );
     expect(parse((p) => (p.tiers.panel = ["codex/gpt-6.1-sol", "codex/gpt-6.1-sol"]))).toThrow(
       'models.json: tier "panel" lists an entry twice',
     );
+  });
+
+  test("a panel needs at least two workers, and same-family workers are allowed", () => {
+    // Two Opus entries are two workers of one family: the sheet notes it, and the generator does not refuse it.
+    expect(parse((p) => (p.tiers.panel = ["claudeAgent/claude-opus-5-5 effort=xhigh", "claudeAgent/claude-fable-5-1 effort=xhigh"]))).not.toThrow();
+    expect(parse((p) => (p.tiers.panel = ["claudeAgent/claude-opus-5-5 effort=xhigh"]))).toThrow(
+      'models.json: role "arena runners" is a panel with 1 worker(s), and a panel needs at least two',
+    );
+    expect(parse((p) => (role(p, "sweep panel").count = 1))).toThrow(
+      'models.json: role "sweep panel" is a panel with 1 worker(s), and a panel needs at least two',
+    );
+  });
+
+  test("count is an integer from 1 to 8 on a role, never on a tier entry", () => {
+    for (const bad of [0, 9, 2.5, "3"]) {
+      expect(parse((p) => (role(p, "swarm workers").count = bad))).toThrow(
+        'models.json: role "swarm workers" count must be an integer from 1 to 8',
+      );
+    }
+    expect(parse((p) => (p.tiers.free = "claudeAgent/claude-haiku-5-5 effort=high count=3"))).toThrow(
+      'models.json: tier "free": claudeAgent/claude-haiku-5-5 effort=high count=3 sets count; put count on the role instead',
+    );
+    expect(parse((p) => (role(p, "sweep panel").panel = "yes"))).toThrow('models.json: role "sweep panel" panel must be true or false');
   });
 
   test("a role naming an undefined tier throws naming the role and the tier", () => {

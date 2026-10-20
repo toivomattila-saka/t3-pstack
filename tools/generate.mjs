@@ -40,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { Type } from "typebox";
 import { Value } from "typebox/value";
 
-import { panelFamilies, parseEntry } from "../plugins/pstack/skills/setup-pstack/scripts/t3-sheet.mjs";
+import { COUNT_RANGE, isPanelRole, parseEntry } from "../plugins/pstack/skills/setup-pstack/scripts/t3-sheet.mjs";
 import { applyRegions, parseFrontmatter, ROUTED_SKILL, t3Regions } from "./derive-t3.mjs";
 import { FROZEN_HOOKS, hookDigest, PLUGIN, SKILLS } from "./plugin.mjs";
 import { pathIsInside, validateSkillsTree, walk } from "./validate-skills.mjs";
@@ -184,12 +184,15 @@ export function validatePluginLayout(pluginRoot) {
   }
 }
 
-const TIERS = ["default", "strongest", "panel"];
+const TIERS = ["default", "strongest", "panel", "free", "high-stakes"];
 
 // Check models.json's shape, throwing with the offending tier, role, or entry
 // named. `skillExists(skill)` reports whether a role's skill directory carries
 // a SKILL.md. Every tier holds T3 entries in the sheet grammar of
-// setup-pstack's t3-sheet.mjs, and the panel spans two model families.
+// setup-pstack's t3-sheet.mjs. A role may carry `count` (its workers per entry,
+// 1 to 8, default 1) and `panel: true`; a panel role must run at least two
+// workers. Distinct model families are not required, since the sheet notes a
+// single-family panel instead.
 export function parseModels(raw, skillExists) {
   const fail = (message) => {
     throw new Error(`models.json: ${message}`);
@@ -204,7 +207,7 @@ export function parseModels(raw, skillExists) {
     if (tier === "panel" && !Array.isArray(value)) fail('tier "panel" must be a list');
     const list = [value].flat();
     if (new Set(list).size !== list.length) fail(`tier "${tier}" lists an entry twice`);
-    const parsed = list.map((entry) => {
+    for (const entry of list) {
       if (typeof entry !== "string" || entry !== entry.trim().split(/\s+/).join(" ")) {
         fail(`tier "${tier}": ${JSON.stringify(entry)} is not one entry written with single spaces`);
       }
@@ -215,9 +218,8 @@ export function parseModels(raw, skillExists) {
         fail(`tier "${tier}": ${err.message}`);
       }
       if (!target) fail(`tier "${tier}" must name a target, not inherit the parent`);
-      return target;
-    });
-    if (tier === "panel" && panelFamilies(parsed).size < 2) fail("the panel needs at least two model families");
+      if (target.count !== undefined) fail(`tier "${tier}": ${entry} sets count; put count on the role instead`);
+    }
   }
   const labels = new Set();
   for (const role of raw.roles) {
@@ -227,6 +229,15 @@ export function parseModels(raw, skillExists) {
     }
     if (!TIERS.includes(role.tier)) fail(`role "${role.role}" names tier "${role.tier}", which tiers does not define`);
     if (!skillExists(role.skill)) fail(`role "${role.role}" names skill "${role.skill}", which has no SKILL.md`);
+    const [low, high] = COUNT_RANGE;
+    if (role.count !== undefined && !(Number.isInteger(role.count) && role.count >= low && role.count <= high)) {
+      fail(`role "${role.role}" count must be an integer from ${low} to ${high}`);
+    }
+    if (role.panel !== undefined && typeof role.panel !== "boolean") fail(`role "${role.role}" panel must be true or false`);
+    if (isPanelRole(role)) {
+      const workers = [raw.tiers[role.tier]].flat().length * (role.count ?? 1);
+      if (workers < 2) fail(`role "${role.role}" is a panel with ${workers} worker(s), and a panel needs at least two`);
+    }
   }
   return raw;
 }

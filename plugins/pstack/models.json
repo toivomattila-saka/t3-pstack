@@ -2,6 +2,8 @@
   "tiers": {
     "default": "claudeAgent/claude-opus-5-5 effort=xhigh",
     "strongest": "claudeAgent/claude-fable-5-1 effort=xhigh",
+    "free": "claudeAgent/claude-haiku-5-5 effort=high",
+    "high-stakes": "claudeAgent/claude-opus-5-5 effort=high",
     "panel": [
       "claudeAgent/claude-opus-5-5 effort=xhigh",
       "codex/gpt-6.1-sol reasoningEffort=xhigh",
@@ -15,7 +17,7 @@
     { "role": "hillclimb", "tier": "strongest", "skill": "poteto-mode" },
     { "role": "judgment and prose", "tier": "default", "skill": "poteto-mode" },
     { "role": "hardest tasks", "alias": "strongest judgment", "tier": "strongest", "skill": "poteto-mode" },
-    { "role": "how explorer", "tier": "default", "skill": "how" },
+    { "role": "how explorer", "tier": "free", "skill": "how" },
     { "role": "how explainer", "tier": "default", "skill": "how" },
     { "role": "why investigators", "tier": "default", "skill": "why" },
     { "role": "why synthesizer", "tier": "default", "skill": "why" },
@@ -25,6 +27,11 @@
     { "role": "arena cross-judge pool", "tier": "panel", "skill": "arena" },
     { "role": "swarm workers", "tier": "default", "skill": "swarm" },
     { "role": "architect runners", "tier": "panel", "skill": "architect" },
-    { "role": "interrogate reviewers", "tier": "panel", "skill": "interrogate" }
+    { "role": "interrogate reviewers", "tier": "panel", "skill": "interrogate" },
+    { "role": "sweep scout", "tier": "free", "skill": "sweep" },
+    { "role": "sweep lens", "tier": "free", "skill": "sweep" },
+    { "role": "sweep panel", "tier": "free", "skill": "sweep", "panel": true, "count": 3 },
+    { "role": "sweep verifier", "tier": "free", "skill": "sweep" },
+    { "role": "high-stakes check", "tier": "high-stakes", "skill": "sweep" }
   ]
 }

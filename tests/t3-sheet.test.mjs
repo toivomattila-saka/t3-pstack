@@ -18,7 +18,15 @@ const catalogPath = join(root, "tests/fixtures/t3-catalog.json");
 const catalog = JSON.parse(readFileSync(catalogPath, "utf8"));
 const { roles, tiers: defaults } = loadModels();
 const check = (text, over = catalog) => checkSheet(parseSheet(text), { roles, defaults, catalog: over });
+// The notes a sheet's own lines raise. A role left at its default has its own note, tested below.
+const notesFor = (text) => {
+  const notes = [];
+  checkSheet(parseSheet(text), { roles, defaults, catalog }, notes);
+  return notes.filter((note) => !note.includes("(no line, tier default)"));
+};
+const SWEEP_NOTE = "all workers are claude, so they share blind spots; a second model family is the upgrade";
 const PANEL = "interrogate reviewers";
+const fewWorkers = (role, got) => `${role}: a panel needs at least two workers among its targets (inherit-parent counts as one), got ${got}`;
 
 describe("parseEntry", () => {
   test("keeps a Pi model ID that has its own provider prefix", () => {
@@ -64,6 +72,21 @@ describe("parseEntry", () => {
     expect(() => parseEntry("claudeAgent/claude-opus-5-5 @high")).toThrow('"@high" is not <optionId>=<value>');
     expect(() => parseEntry("grok/grok-4.7 reasoningEffort=high reasoningEffort=low")).toThrow('sets "reasoningEffort" twice');
   });
+
+  test("count is a reserved pair from 1 to 8 that no option takes", () => {
+    expect(parseEntry("claudeAgent/claude-haiku-5-5 effort=high count=3")).toEqual({
+      providerInstanceId: "claudeAgent",
+      model: "claude-haiku-5-5",
+      options: { effort: "high" },
+      count: 3,
+    });
+    expect(parseEntry("claudeAgent/claude-haiku-5-5 effort=high").count).toBeUndefined();
+    for (const bad of ["count=0", "count=9", "count=2.5", "count=x", "count=-1"]) {
+      expect(() => parseEntry(`claudeAgent/claude-haiku-5-5 ${bad}`)).toThrow(`${bad} is not an integer from 1 to 8`);
+    }
+    expect(() => parseEntry("claudeAgent/claude-haiku-5-5 count=2 count=3")).toThrow('sets "count" twice');
+    expect(() => parseEntry("inherit-parent count=2")).toThrow("inherit-parent takes no options");
+  });
 });
 
 describe("checkSheet without a catalog", () => {
@@ -71,8 +94,8 @@ describe("checkSheet without a catalog", () => {
     expect(check("bug-fix: someprovider/unlisted-model effort=max\nsession hook: on\n", null)).toEqual([]);
     expect(check(`bug-fix: claude-opus\n${PANEL}: someprovider/claude-a, otherprovider/claude-b\n`, null)).toEqual([
       'bug-fix: "claude-opus" does not start with <providerInstanceId>/<modelId>',
-      `${PANEL}: a panel needs at least two model families among its targets (inherit-parent does not count), got claude`,
     ]);
+    expect(check(`${PANEL}: someprovider/claude-a`, null)).toEqual([fewWorkers(PANEL, 1)]);
   });
 });
 
@@ -127,18 +150,43 @@ describe("checkSheet against a catalog", () => {
     expect(check(lines, noGrok)).toEqual([]);
   });
 
-  test("a panel on one family fails, whatever providers serve it", () => {
-    expect(check(`${PANEL}: claudeAgent/claude-opus-5-5, codex_pool/claude-opus-5-5`)).toEqual([
-      `${PANEL}: a panel needs at least two model families among its targets (inherit-parent does not count), got claude`,
+  test("a panel on one family passes, with a note that its workers share blind spots", () => {
+    expect(check(`${PANEL}: claudeAgent/claude-opus-5-5, codex_pool/claude-opus-5-5`)).toEqual([]);
+    expect(notesFor(`${PANEL}: claudeAgent/claude-opus-5-5, codex_pool/claude-opus-5-5`)).toEqual([
+      `${PANEL}: all workers are claude, so they share blind spots; a second model family is the upgrade`,
     ]);
     expect(check(`${PANEL}: claudeAgent/claude-opus-5-5, grok/grok-4.7`)).toEqual([]);
+    expect(notesFor(`${PANEL}: claudeAgent/claude-opus-5-5, grok/grok-4.7`)).toEqual([]);
   });
 
-  test("inherit-parent does not count toward a panel's two families", () => {
-    expect(check(`${PANEL}: inherit-parent, grok/grok-4.7`)).toEqual([
-      `${PANEL}: a panel needs at least two model families among its targets (inherit-parent does not count), got grok`,
-    ]);
+  test("a panel left at its tier default notes its family, with no line to ask for it", () => {
+    const notes = [];
+    checkSheet(parseSheet("session hook: on"), { roles, defaults, catalog }, notes);
+    expect(notes).toEqual([`sweep panel (no line, tier default): ${SWEEP_NOTE}`]);
+  });
+
+  test("a single-worker panel fails, and a panel's counts sum over its entries", () => {
+    expect(check(`${PANEL}: claudeAgent/claude-opus-5-5`)).toEqual([fewWorkers(PANEL, 1)]);
+    expect(check(`${PANEL}: claudeAgent/claude-opus-5-5 count=2`)).toEqual([]);
+    expect(check(`${PANEL}: claudeAgent/claude-opus-5-5 count=1, grok/grok-4.7 count=1`)).toEqual([]);
+  });
+
+  test("inherit-parent counts as one worker toward a panel", () => {
+    expect(check(`${PANEL}: inherit-parent, grok/grok-4.7`)).toEqual([]);
+    expect(check(`${PANEL}: inherit-parent`)).toEqual([fewWorkers(PANEL, 1)]);
     expect(check(`${PANEL}: auto, claudeAgent/claude-fable-5-1, grok/grok-4.7`)).toEqual([]);
+  });
+
+  test("count is checked in a sheet, and a line's count replaces the role's default", () => {
+    expect(check(`${PANEL}: claudeAgent/claude-opus-5-5 count=9`)).toEqual([
+      `${PANEL}: "claudeAgent/claude-opus-5-5 count=9": count=9 is not an integer from 1 to 8`,
+      fewWorkers(PANEL, 0),
+    ]);
+    // sweep panel defaults to count=3 on its one entry, so it has three workers and one family.
+    expect(check("sweep panel: claudeAgent/claude-haiku-5-5 effort=high")).toEqual([]);
+    expect(notesFor("sweep panel: claudeAgent/claude-haiku-5-5 effort=high")).toEqual([`sweep panel: ${SWEEP_NOTE}`]);
+    expect(check("sweep panel: claudeAgent/claude-haiku-5-5 effort=high count=1")).toEqual([fewWorkers("sweep panel", 1)]);
+    expect(check("sweep panel: claudeAgent/claude-haiku-5-5 effort=high, claudeAgent/claude-opus-5-5 effort=high")).toEqual([]);
   });
 
   test("an option named like an Object prototype key is checked, not dropped", () => {
@@ -159,7 +207,7 @@ describe("checkSheet against a catalog", () => {
     const otherPanels = roles.filter((r) => r.tier === "panel" && r.role !== PANEL).map((r) => r.role);
     expect(check(`${PANEL}: claudeAgent/claude-opus-5-5, grok/grok-4.7`, noCross)).toEqual([
       `${PANEL}: grok/grok-4.7: "grok" cannot run child tasks`,
-      `${PANEL}: a panel needs at least two model families among its targets (inherit-parent does not count), got claude`,
+      fewWorkers(PANEL, 1),
       ...otherPanels.map((role) => `${role} (no line, tier default): grok/grok-4.7: "grok" cannot run child tasks`),
     ]);
   });
@@ -235,13 +283,25 @@ describe("t3-sheet.mjs CLI", () => {
       const result = run(path, "bug-fix: grok/grok-9\n");
       expect({ status: result.status, stdout: result.stdout }).toEqual({
         status: 1,
-        stdout: 'bug-fix: grok/grok-9: "grok" does not list model "grok-9"\n',
+        stdout:
+          `note: sweep panel (no line, tier default): ${SWEEP_NOTE}\n` +
+          'bug-fix: grok/grok-9: "grok" does not list model "grok-9"\n',
       });
     }
   }, CLI_TIMEOUT);
 
   test("exits 0 on a sheet that dispatches", () => {
     expect(run(script, "bug-fix: grok/grok-4.7 reasoningEffort=xhigh\n").status).toBe(0);
+  }, CLI_TIMEOUT);
+
+  test("prints a single-family note as a note line and still exits 0", () => {
+    const result = run(script, "sweep panel: claudeAgent/claude-haiku-5-5 effort=high\n");
+    expect({ status: result.status, stdout: result.stdout }).toEqual({
+      status: 0,
+      stdout:
+        "note: sweep panel: all workers are claude, so they share blind spots; a second model family is the upgrade\n" +
+        'ok: every role line parses and dispatches on this T3\n',
+    });
   }, CLI_TIMEOUT);
 });
 

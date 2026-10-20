@@ -74,12 +74,14 @@ describe("locators", () => {
 
 describe("regions", () => {
   test("every skill a role names gets that role's tier default stamped in its Models section", () => {
-    const marked = { ...models, tiers: { default: "x/marker-default", strongest: "x/marker-strongest", panel: ["a/claude-p", "b/gpt-p"] } };
+    const single = { default: "x/marker-default", strongest: "x/marker-strongest", free: "x/marker-free", "high-stakes": "x/marker-high" };
+    const marked = { ...models, tiers: { ...single, panel: ["a/claude-p", "b/gpt-p"] } };
     for (const skill of new Set(models.roles.map((r) => r.skill))) {
       const file = `plugins/pstack/skills/${skill}/SKILL.md`;
       const stamped = applyRegions(file, readFileSync(join(repoRoot, file), "utf8"), marked, { strict: true });
       for (const role of models.roles.filter((r) => r.skill === skill)) {
-        const expected = { default: "`x/marker-default`", strongest: "`x/marker-strongest`", panel: "`a/claude-p`, `b/gpt-p`" }[role.tier];
+        const count = role.count > 1 ? ` count=${role.count}` : "";
+        const expected = role.tier === "panel" ? "`a/claude-p`, `b/gpt-p`" : `\`${single[role.tier]}${count}\``;
         expect(stamped).toContain(`- ${role.role}: ${expected}`);
       }
     }
@@ -91,7 +93,7 @@ describe("regions", () => {
     const once = applyRegions(file, text, models, { strict: true });
     expect(once).not.toContain("stale");
     expect(once).toContain("## After\nkeep\n");
-    expect(once).toContain("- how explorer: `claudeAgent/claude-opus-5-5 effort=xhigh`");
+    expect(once).toContain("- how explorer: `claudeAgent/claude-haiku-5-5 effort=high`");
     expect(applyRegions(file, once, models, { strict: true })).toBe(once);
   });
 

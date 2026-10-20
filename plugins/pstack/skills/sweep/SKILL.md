@@ -34,9 +34,7 @@ Every brief carries three things: the full question, the worker's own angle, and
 
 Each worker is one `delegate_task` call with `mode: "async"`, its own `clientRequestId`, and `role: "research"` (or `role: "review"` for lenses and verifiers). The brief says to inspect only. Spawn every worker in one message. Their completions wake the thread, so end the turn instead of polling, and call `task_status` only when a result is needed mid-turn.
 
-Workers run on the `fast` tier entry, which is Haiku 5.5 at effort high, through the role's model sheet entry when one exists. Use standard speed. Fast mode is for a person who is blocked right now.
-
-TODO: role entry for sweep to be added to models.json in the config phase.
+Each worker runs on its role's model sheet entry: `sweep scout` for scouts, `sweep lens` for lenses, `sweep panel` for panel workers, and `sweep verifier` for verifiers. Each defaults to Haiku 5.5 at effort high. A role's `count` runs that many independent workers on its entry, and `sweep panel` runs 3 by default. Use standard speed. Fast mode is for a person who is blocked right now.
 
 Record `git status --porcelain` before the first spawn and again after the last result. The two must match. That check is how the read-only rule is proven, not assumed.
 
@@ -77,7 +75,7 @@ Lens findings are claims too. The manager checks one with the verifier before ac
 
 ### Panel (redundancy)
 
-Use when one answer must be right and a single worker's read could be wrong. Ask the same question of 3 to 5 workers. Each starts from a different entry point, with its own disjoint set of files or docs, so two workers that raise the same point read it independently. Overlap then means something. If every worker started from the same path, they would agree for the wrong reason.
+Use when one answer must be right and a single worker's read could be wrong. Ask the same question of the `sweep panel` workers: 3 by default, and 3 to 5 is the useful range. Each starts from a different entry point, with its own disjoint set of files or docs, so two workers that raise the same point read it independently. Overlap then means something. If every worker started from the same path, they would agree for the wrong reason.
 
 Merge the returns into one list:
 
@@ -107,7 +105,7 @@ WRONG claims are dropped. UNVERIFIABLE claims stay, marked. CONFIRMED claims car
 
 ## High-stakes check
 
-If the decision is hard to reverse, touches security or data, or the user will act on it without reading the workers, add one fresh Opus worker on the `default` tier entry. Give it the question and the merged claims with their verifier verdicts, and ask it to attack the conclusion. Give it no earlier conclusion to confirm.
+If the decision is hard to reverse, touches security or data, or the user will act on it without reading the workers, add one fresh Opus worker on the `high-stakes check` role's entry, which is Opus 5.5 at effort high by default. Give it the question and the merged claims with their verifier verdicts, and ask it to attack the conclusion. Give it no earlier conclusion to confirm.
 
 ## Rules
 
@@ -121,3 +119,13 @@ If the decision is hard to reverse, touches security or data, or the user will a
 - A lookup the manager can answer in one tool call: one grep, one file read, one `gh` call. Briefing a sweep costs more than that answer.
 - Anything that writes, edits, commits, pushes, sends, or deletes. Use the **arena** or **swarm** skill, within the write bound above.
 - A question only the user can answer.
+
+## Models
+
+Role defaults on T3, stamped from `plugins/pstack/models.json`. A role line in the model sheet overrides each one. The sheet is `~/.config/t3-pstack/models.md` (`$XDG_CONFIG_HOME/t3-pstack/models.md` when that is set), one per machine, and `/setup-pstack` writes it. When it is missing, read `t3-pstack-models.md` in the host's config directory (`$CLAUDE_CONFIG_DIR` or `~/.claude` on Claude Code, `$CODEX_HOME` or `~/.codex` on Codex). An entry is `<providerInstanceId>/<modelId>` plus `<optionId>=<value>` pairs, and it maps onto `delegate_task`'s `target`, with the provider instance as `providerInstanceId`, the model as `model`, and the pairs as `options`. It splits at its first `/`, so a model ID with its own `/`, such as OpenCode's `<provider>/<model>`, is written whole after it. Option IDs differ per provider, so take them from `orchestrator_capabilities`. A `count=<n>` pair (1 to 8) runs n independent workers on the entry, and a panel's workers are its entries' counts summed. `inherit-parent` or `auto` omits `target`.
+
+- sweep scout: `claudeAgent/claude-haiku-5-5 effort=high`
+- sweep lens: `claudeAgent/claude-haiku-5-5 effort=high`
+- sweep panel: `claudeAgent/claude-haiku-5-5 effort=high count=3` Note: all workers are claude, so they share blind spots; a second model family is the upgrade.
+- sweep verifier: `claudeAgent/claude-haiku-5-5 effort=high`
+- high-stakes check: `claudeAgent/claude-opus-5-5 effort=high`

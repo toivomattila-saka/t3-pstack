@@ -325,7 +325,7 @@
     },
     {
       "pattern": "3. Launch both subagents in the same message with `run_in_background: true`:",
-      "replacement": "3. Launch both subagents in the same response as two `delegate_task` calls with `mode: \"async\"` and `role: \"review\"`, on the first two model families of the `interrogate reviewers` sheet line (`<plugin root>` is the directory that holds this plugin's `skills/`):",
+      "replacement": "3. Launch both subagents in the same response as two `delegate_task` calls with `mode: \"async\"` and `role: \"review\"`, on the first two entries of the `interrogate reviewers` sheet line (`<plugin root>` is the directory that holds this plugin's `skills/`):",
       "rationale": "Per-skill notes: thermos",
       "files": "^skills/thermos/SKILL\\.md$"
     },
@@ -598,8 +598,8 @@
     {
       "files": "^skills/poteto-mode/playbooks/",
       "pattern": "Fan out independent verifiers at the code-ready SHA per the **swarm** skill.",
-      "replacement": "Fan out independent verifiers at the code-ready SHA per the **swarm** skill, as `delegate_task` children assigned round-robin over the `interrogate reviewers` entries, so the lanes span model families.",
-      "rationale": "Playbooks: Autopilot (verifier lanes span families)"
+      "replacement": "Fan out independent verifiers at the code-ready SHA per the **swarm** skill, as `delegate_task` children assigned round-robin over the `interrogate reviewers` entries, so each lane runs on a different entry when the line lists several.",
+      "rationale": "Playbooks: Autopilot (verifier lanes spread over the panel's entries; families are not required)"
     },
     {
       "files": "^skills/poteto-mode/playbooks/",
